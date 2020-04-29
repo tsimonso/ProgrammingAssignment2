@@ -26,15 +26,14 @@ makeCacheMatrix <- function(x = matrix()) { # The function takes a matrix argume
                 x<<-y
         }
         
-                # - 'get' allows to retrieve the matrix 'x'. The variable 'x' is absent from its environment, but due to lexical scoping,
+        # - 'get' allows to retrieve the matrix 'x'. The variable 'x' is absent from its environment, but due to lexical scoping,
         #  the function is able to find it in its parent environment (i.e. the 'MyMatrixObject' environment).
         get<-function(){
                 x
         }
         
         # - 'setinv' allows to cache the inverse of the matrix, after the function 'cacheSolve' has calculated it.
-        # Again, thanks to lexical scoping, 'setinv' is able to find 'j' in its parent environment (i.e. the 'MyMatrixObject' environment),
-        # and modify it using the deep assignment arrow (<<-).
+        # Again, thanks to lexical scoping, 'setinv' is able to find 'j' in its parent environment and modify it using the deep assignment arrow (<<-).
         setinv<-function(i){
                 j<<-i
         }
@@ -74,45 +73,9 @@ cacheSolve <- function(mmo, ...) {
                 return(i) # The execution of the code ends after 'return'
         }
         
-        # If the inverse matrix hasn't been computed yet, 
-        # the matrix is retrieved, running the function 'mmo$get' from the 'myMatrixObject' list of functions.
-        # The matrix is located in the parent environment of the 'mmo$get' function (i.e. the 'MyMatrixObject' environment).
+        # If the inverse matrix hasn't been computed yet, the function 'mmo$get' is called and retrieves the matrix from its parent environment.
         x<-mmo$get()
-        
-        # I added this code to check if the matrix is square
-        d<-dim(x)
-        if(d[1]!=d[2]){
-                return("No inverse. The matrix should be square.")
-        }
-        
-        # A square matrix has an inverse iff its determinant is not 0.
-        if(det(x)!=0){   # After checking this,...
-                i<-solve(x)   # the inverse of the matrix is computed and assigned to a variable 'i' in the current environment of 'cacheSolve'.
-                mmo$setinv(i) # We call the 'setinv' function from the 'MyMatrixObject' list to cache the result in the parent 'myMatrixObject' environment.
-                return(i)     # The result is returned.
-        }
-        
-        # If the determinant is 0, the following message is sent:
-        message("This matrix is not invertible")
+        i<-solve(x)   # The inverse of the matrix is computed and assigned to a variable 'i' in the current environment of 'cacheSolve'.
+        mmo$setinv(i) # We call the 'setinv' function to cache the result in its parent 'myMatrixObject' environment.
+        i     # The result is returned.
 }
-
-
-## To test the code:
-##-----------------
-#m1 <- matrix(c(1/2, -1/4, -1, 3/4), nrow = 2, ncol = 2)
-#mcm<-makeCacheMatrix(m1)
-#cacheSolve(mcm)
-#(n1<-cacheSolve(mcm))
-#n1%*%m1 #as expected, when we multiply the matrix by its inverse, we get an identity matrix
-
-## To change matrices without using makeCacheMatrix again:
-##-------------------------------------------------------
-#m2<-matrix(1:4,nrow=2)
-#mcm$set(m2)
-#cacheSolve(mcm)
-#(n2<-cacheSolve(mcm))
-#n2%*%m2 #as expected, when we multiply the matrix by its inverse, we get an identity matrix
-
-## Rem: With larger matrices, there may be rounding errors with the identity matrix.
-# This is due to the finite precision of R (of the order of 10^-16)
-# To display the identity matrix and chech that everything is correct, we can round it to a few decimal places.
